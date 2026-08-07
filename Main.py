@@ -1,5 +1,6 @@
 import os
 import threading
+import re
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
@@ -22,19 +23,25 @@ source_channels = ['deals', 'lootdealsapp']
 
 client = TelegramClient(StringSession(session_string), api_id, api_hash)
 
+# आपका अपना Amazon Affiliate Tag
+YOUR_AMAZON_TAG = "dealofcheapes-21"
+
 @client.on(events.NewMessage(chats=source_channels))
 async def handler(event):
     try:
-        # Get message text, format, and buttons/links
+        # 1. मैसेज का टेक्स्ट उठाओ
         text = event.text or ""
-        formatting = event.entities
-        buttons = event.reply_markup
-
+        
+        # 2. जादू (Magic): किसी भी पुराने Amazon टैग को अपने टैग से बदल दो
+        modified_text = re.sub(r'tag=[a-zA-Z0-9_-]+', f'tag={YOUR_AMAZON_TAG}', text)
+        
+        # 3. मैसेज को आपके चैनल पर भेज दो 
         if event.media:
-            await client.send_file(target_channel, event.media, caption=text, formatting_entities=formatting, reply_markup=buttons)
+            await client.send_file(target_channel, event.media, caption=modified_text)
         else:
-            await client.send_message(target_channel, text, formatting_entities=formatting, reply_markup=buttons)
-        print("Deal with links posted successfully!")
+            await client.send_message(target_channel, modified_text)
+            
+        print("Deal posted with YOUR Amazon tag!")
     except Exception as e:
         print(f"Error: {e}")
 
