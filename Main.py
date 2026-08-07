@@ -5,10 +5,16 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 
-# Dummy web server to keep it FREE
+# UptimeRobot को 'All Okay' बोलने वाला सर्वर
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+
 def run_server():
-    server_address = ('0.0.0.0', int(os.environ.get("PORT", 10000)))
-    httpd = HTTPServer(server_address, BaseHTTPRequestHandler)
+    port = int(os.environ.get("PORT", 10000))
+    httpd = HTTPServer(('0.0.0.0', port), HealthCheckHandler)
     httpd.serve_forever()
 
 threading.Thread(target=run_server, daemon=True).start()
