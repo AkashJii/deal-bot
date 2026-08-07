@@ -1,7 +1,18 @@
 import os
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 
+# Dummy web server to trick Render into keeping the Free Tier alive
+def run_server():
+    server_address = ('0.0.0.0', int(os.environ.get("PORT", 10000)))
+    httpd = HTTPServer(server_address, BaseHTTPRequestHandler)
+    httpd.serve_forever()
+
+threading.Thread(target=run_server, daemon=True).start()
+
+# Telegram Bot Code
 api_id = int(os.environ.get("API_ID"))
 api_hash = os.environ.get("API_HASH")
 session_string = os.environ.get("SESSION_STRING")
