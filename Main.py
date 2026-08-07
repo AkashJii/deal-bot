@@ -4,7 +4,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 
-# Dummy web server to trick Render into keeping the Free Tier alive
+# Dummy web server to keep it FREE
 def run_server():
     server_address = ('0.0.0.0', int(os.environ.get("PORT", 10000)))
     httpd = HTTPServer(server_address, BaseHTTPRequestHandler)
@@ -25,12 +25,16 @@ client = TelegramClient(StringSession(session_string), api_id, api_hash)
 @client.on(events.NewMessage(chats=source_channels))
 async def handler(event):
     try:
-        text = event.raw_text or ""
+        # Get message text, format, and buttons/links
+        text = event.text or ""
+        formatting = event.entities
+        buttons = event.reply_markup
+
         if event.media:
-            await client.send_file(target_channel, event.media, caption=text)
+            await client.send_file(target_channel, event.media, caption=text, formatting_entities=formatting, reply_markup=buttons)
         else:
-            await client.send_message(target_channel, text)
-        print("Deal posted successfully!")
+            await client.send_message(target_channel, text, formatting_entities=formatting, reply_markup=buttons)
+        print("Deal with links posted successfully!")
     except Exception as e:
         print(f"Error: {e}")
 
