@@ -54,11 +54,10 @@ def get_cuelinks_affiliate_url(original_url):
         req = urllib.request.Request(api_endpoint, data=data, headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=5) as response:
             res_data = json.loads(response.read().decode())
-            # Cuelinks API return karega naya link, nahi to purana hi de dega
             return res_data.get("url", original_url) 
     except Exception as e:
         print(f"Cuelinks Warning: {e}")
-        return original_url # Failsafe: Error aane par original link bhej do
+        return original_url
 
 @client.on(events.NewMessage(chats=source_channels))
 async def handler(event):
@@ -68,14 +67,15 @@ async def handler(event):
         # 1. Amazon Tag Magic 🪄
         text = re.sub(r'tag=[a-zA-Z0-9_-]+', f'tag={YOUR_AMAZON_TAG}', text)
         
-        # 2. Cuelinks API Magic (Flipkart/Myntra/Shopsy ke liye) 🪄
-        # Message mein se saare links dhundo
+        # 2. Flipkart / Shopsy Link Cleaning & Cuelinks Magic 🪄
         urls = re.findall(r'(https?://[^\s]+)', text)
         for url in urls:
-            # Agar Amazon nahi hai, toh Cuelinks ko bhej do
             if "amazon" not in url.lower() and "amzn" not in url.lower():
-                affiliated_url = get_cuelinks_affiliate_url(url)
-                if affiliated_url != url:
+                # Purana extrape/dusra affiliate tag saaf karo taaki Cuelinks naya bana sake
+                base_url = url.split('&affid=')[0].split('?affid=')[0].split('&src=')[0].split('?src=')[0]
+                
+                affiliated_url = get_cuelinks_affiliate_url(base_url)
+                if affiliated_url != base_url:
                     text = text.replace(url, affiliated_url)
         
         # 3. Post to Channel 🚀
@@ -84,7 +84,7 @@ async def handler(event):
         else:
             await client.send_message(target_channel, text)
             
-        print("Deal successfully posted with Affiliate Links!")
+        print("Deal successfully posted with Cleaned Affiliate Links!")
     except Exception as e:
         print(f"Error in processing deal: {e}")
 
