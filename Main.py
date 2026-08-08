@@ -1,11 +1,22 @@
 import os
 import threading
 import re
+import urllib.request
+import urllib.parse
+import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 
-# UptimeRobot को 'All Okay' बोलने वाला सर्वर
+# ==========================================
+# 🚀 CO-FOUNDER CONFIGURATION (API KEYS)
+# ==========================================
+CUELINKS_API_KEY = "F3x7T2PXVTKHcTj22CRcqhNqR15cfb8sB9nVuwJRPuM"
+YOUR_AMAZON_TAG = "dealofcheapes-21"
+
+# ==========================================
+# 🟢 UPTIMEROBOT 24/7 SERVER LOGIC
+# ==========================================
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -19,38 +30,64 @@ def run_server():
 
 threading.Thread(target=run_server, daemon=True).start()
 
-# Telegram Bot Code
+# ==========================================
+# 🤖 TELEGRAM BOT LOGIC
+# ==========================================
 api_id = int(os.environ.get("API_ID"))
 api_hash = os.environ.get("API_HASH")
 session_string = os.environ.get("SESSION_STRING")
 target_channel = os.environ.get("TARGET_CHANNEL", "@dealofcheapest")
-
 source_channels = ['deals', 'lootdealsapp']
 
 client = TelegramClient(StringSession(session_string), api_id, api_hash)
 
-# आपका अपना Amazon Affiliate Tag
-YOUR_AMAZON_TAG = "dealofcheapes-21"
+# Cuelinks API Function
+def get_cuelinks_affiliate_url(original_url):
+    try:
+        api_endpoint = "https://api.cuelinks.com/v3/links/generate"
+        headers = {
+            "Authorization": f"Bearer {CUELINKS_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        data = json.dumps({"url": original_url}).encode("utf-8")
+        
+        req = urllib.request.Request(api_endpoint, data=data, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=5) as response:
+            res_data = json.loads(response.read().decode())
+            # Cuelinks API return karega naya link, nahi to purana hi de dega
+            return res_data.get("url", original_url) 
+    except Exception as e:
+        print(f"Cuelinks Warning: {e}")
+        return original_url # Failsafe: Error aane par original link bhej do
 
 @client.on(events.NewMessage(chats=source_channels))
 async def handler(event):
     try:
-        # 1. मैसेज का टेक्स्ट उठाओ
         text = event.text or ""
         
-        # 2. जादू (Magic): किसी भी पुराने Amazon टैग को अपने टैग से बदल दो
-        modified_text = re.sub(r'tag=[a-zA-Z0-9_-]+', f'tag={YOUR_AMAZON_TAG}', text)
+        # 1. Amazon Tag Magic 🪄
+        text = re.sub(r'tag=[a-zA-Z0-9_-]+', f'tag={YOUR_AMAZON_TAG}', text)
         
-        # 3. मैसेज को आपके चैनल पर भेज दो 
+        # 2. Cuelinks API Magic (Flipkart/Myntra/Shopsy ke liye) 🪄
+        # Message mein se saare links dhundo
+        urls = re.findall(r'(https?://[^\s]+)', text)
+        for url in urls:
+            # Agar Amazon nahi hai, toh Cuelinks ko bhej do
+            if "amazon" not in url.lower() and "amzn" not in url.lower():
+                affiliated_url = get_cuelinks_affiliate_url(url)
+                if affiliated_url != url:
+                    text = text.replace(url, affiliated_url)
+        
+        # 3. Post to Channel 🚀
         if event.media:
-            await client.send_file(target_channel, event.media, caption=modified_text)
+            await client.send_file(target_channel, event.media, caption=text)
         else:
-            await client.send_message(target_channel, modified_text)
+            await client.send_message(target_channel, text)
             
-        print("Deal posted with YOUR Amazon tag!")
+        print("Deal successfully posted with Affiliate Links!")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error in processing deal: {e}")
 
-print("Bot started on Cloud...")
+print("Bot started on Cloud with Cuelinks V3 API...")
 client.start()
 client.run_until_disconnected()
