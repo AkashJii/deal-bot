@@ -64,6 +64,13 @@ async def handler(event):
     try:
         text = event.text or ""
         
+        # 0. Quality & Spam Filter (कचरा डील्स को बाहर निकालने के लिए)
+        text_lower = text.lower()
+        if len(text.strip()) < 15:
+            return
+        if "rs." not in text_lower and "₹" not in text_lower and "off" not in text_lower:
+            return
+
         # 1. Amazon Tag Magic 🪄
         text = re.sub(r'tag=[a-zA-Z0-9_-]+', f'tag={YOUR_AMAZON_TAG}', text)
         
@@ -71,7 +78,6 @@ async def handler(event):
         urls = re.findall(r'(https?://[^\s]+)', text)
         for url in urls:
             if "amazon" not in url.lower() and "amzn" not in url.lower():
-                # Purana extrape/dusra affiliate tag saaf karo taaki Cuelinks naya bana sake
                 base_url = url.split('&affid=')[0].split('?affid=')[0].split('&src=')[0].split('?src=')[0]
                 
                 affiliated_url = get_cuelinks_affiliate_url(base_url)
@@ -84,10 +90,10 @@ async def handler(event):
         else:
             await client.send_message(target_channel, text)
             
-        print("Deal successfully posted with Cleaned Affiliate Links!")
+        print("Filtered & Cleaned Deal successfully posted!")
     except Exception as e:
         print(f"Error in processing deal: {e}")
 
-print("Bot started on Cloud with Cuelinks V3 API...")
+print("Bot started on Cloud with Smart Filters...")
 client.start()
 client.run_until_disconnected()
