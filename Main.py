@@ -54,34 +54,28 @@ def get_cuelinks_affiliate_url(original_url):
         req = urllib.request.Request(api_endpoint, data=data, headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=5) as response:
             res_data = json.loads(response.read().decode())
+            # Cuelinks API return karega naya link, nahi to purana hi de dega
             return res_data.get("url", original_url) 
     except Exception as e:
         print(f"Cuelinks Warning: {e}")
-        return original_url
+        return original_url # Failsafe: Error aane par original link bhej do
 
 @client.on(events.NewMessage(chats=source_channels))
 async def handler(event):
     try:
         text = event.text or ""
         
-        # 0. Quality & Spam Filter (कचरा डील्स को बाहर निकालने के लिए)
-        text_lower = text.lower()
-        if len(text.strip()) < 15:
-            return
-        if "rs." not in text_lower and "₹" not in text_lower and "off" not in text_lower:
-            return
-
         # 1. Amazon Tag Magic 🪄
         text = re.sub(r'tag=[a-zA-Z0-9_-]+', f'tag={YOUR_AMAZON_TAG}', text)
         
-        # 2. Flipkart / Shopsy Link Cleaning & Cuelinks Magic 🪄
+        # 2. Cuelinks API Magic (Flipkart/Myntra/Shopsy ke liye) 🪄
+        # Message mein se saare links dhundo
         urls = re.findall(r'(https?://[^\s]+)', text)
         for url in urls:
+            # Agar Amazon nahi hai, toh Cuelinks ko bhej do
             if "amazon" not in url.lower() and "amzn" not in url.lower():
-                base_url = url.split('&affid=')[0].split('?affid=')[0].split('&src=')[0].split('?src=')[0]
-                
-                affiliated_url = get_cuelinks_affiliate_url(base_url)
-                if affiliated_url != base_url:
+                affiliated_url = get_cuelinks_affiliate_url(url)
+                if affiliated_url != url:
                     text = text.replace(url, affiliated_url)
         
         # 3. Post to Channel 🚀
@@ -90,10 +84,11 @@ async def handler(event):
         else:
             await client.send_message(target_channel, text)
             
-        print("Filtered & Cleaned Deal successfully posted!")
+        print("Deal successfully posted with Affiliate Links!")
     except Exception as e:
         print(f"Error in processing deal: {e}")
 
-print("Bot started on Cloud with Smart Filters...")
+print("Bot started on Cloud with Cuelinks V3 API...")
 client.start()
 client.run_until_disconnected()
+
