@@ -48,5 +48,7 @@ async def handle_new_deal(event):
                 print(f"Error posting deal: {e}")
 
 print("Bot is running and listening for fresh deals...")
-client.start()
+# Yahan apna MyDealconvertbot ka token daal diya hai
+my_bot_token = "8532726197:AAFK_LU8ZtyU5EtwwzctUZxFWzCPkV1232k"
+client.start(bot_token=my_bot_token)
 client.run_until_disconnected()
