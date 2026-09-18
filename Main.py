@@ -1,59 +1,42 @@
-from telethon import TelegramClient, events
+import telebot
+import os
 import re
 
-# अपनी API ID और Hash यहाँ डालें
-api_id = 1234567  
-api_hash = 'your_api_hash_here'
+# Render se direct apka token uthayega
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8532726197:AAFK_LU8ZtyU5EtwwzctUZxFWzCPkV1232k")
+bot = telebot.TeleBot(BOT_TOKEN)
 
-# सोर्स चैनल (जहाँ से डील्स उठानी हैं) और अपना चैनल
-SOURCE_CHANNELS = ['@source_channel_1', '@source_channel_2']
-MY_CHANNEL = '@dealofcheapest'
-
-# यह Set उन सभी लिंक्स को याद रखेगा जो आज पोस्ट हो चुके हैं
+MY_CHANNEL = "@Dealofcheapest"
 posted_deals = set()
 
-client = TelegramClient('deal_bot', api_id, api_hash)
-
-# लिंक्स ढूंढने के लिए Regex (ताकि मैसेज से लिंक निकाला जा सके)
+# Links dhundhne ka formula
 url_pattern = re.compile(r'(https?://[^\s]+)')
 
-@client.on(events.NewMessage(chats=SOURCE_CHANNELS))
-async def handle_new_deal(event):
-    message_text = event.message.text
-    
-    if message_text:
-        # मैसेज में से सभी लिंक्स ढूँढो
-        urls = url_pattern.findall(message_text)
+# Ye bot ko aane wale har message ko read karne me help karega
+@bot.message_handler(func=lambda message: True, content_types=['text'])
+@bot.channel_post_handler(func=lambda message: True, content_types=['text'])
+def handle_new_deal(message):
+    message_text = message.text
+    if not message_text:
+        return
         
-        # अगर मैसेज में कोई लिंक है
-        if urls:
-            # हम मुख्य लिंक (आमतौर पर पहला लिंक) चेक करेंगे
-            main_url = urls[0] 
+    urls = url_pattern.findall(message_text)
+    
+    if urls:
+        main_url = urls[0]
+        
+        # Check karna ki deal pehle toh nahi daali
+        if main_url in posted_deals:
+            print(f"Skipped Duplicate Deal: {main_url}")
+            return
             
-            # 🛑 डुप्लीकेट चेक: क्या यह लिंक पहले भेजा जा चुका है?
-            if main_url in posted_deals:
-                print(f"Skipped Duplicate Deal: {main_url}")
-                return # अगर डुप्लीकेट है, तो यहीं रुक जाओ और कुछ मत करो
-            
-            # ✅ अगर नया लिंक है, तो अपने चैनल पर भेजो
-            try:
-                # यहाँ तुम अपना एफिलिएट लिंक बदलने वाला कोड भी लगा सकते हो
-                await client.send_message(MY_CHANNEL, message_text)
-                
-                # भेजने के बाद इस लिंक को मेमोरी (Set) में सेव कर लो
-                posted_deals.add(main_url)
-                print(f"Success! New Deal Posted: {main_url}")
-                
-            except Exception as e:
-                print(f"Error posting deal: {e}")
+        try:
+            # Deal of Cheapest channel me forward karna
+            bot.send_message(MY_CHANNEL, message_text)
+            posted_deals.add(main_url)
+            print(f"Success: New Deal Posted: {main_url}")
+        except Exception as e:
+            print(f"Error posting deal: {e}")
 
-import os
-from telethon.sync import TelegramClient
-
-# Render se direct token pass karenge
-my_bot_token = os.environ.get("BOT_TOKEN") 
-
-# Telethon ko batao ki ye ek 'bot' hai, user account nahi
-client.start(bot_token=my_bot_token)
-print("Bot is running and listening for fresh deals...")
-client.run_until_disconnected()
+print("Bot is running and listening for fresh deals without API ID/Hash...")
+bot.infinity_polling()
