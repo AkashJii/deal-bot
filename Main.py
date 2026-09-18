@@ -47,8 +47,13 @@ async def handle_new_deal(event):
             except Exception as e:
                 print(f"Error posting deal: {e}")
 
-print("Bot is running and listening for fresh deals...")
-# Yahan apna MyDealconvertbot ka token daal diya hai
-my_bot_token = "8532726197:AAFK_LU8ZtyU5EtwwzctUZxFWzCPkV1232k"
+import os
+from telethon.sync import TelegramClient
+
+# Render se direct token pass karenge
+my_bot_token = os.environ.get("BOT_TOKEN") 
+
+# Telethon ko batao ki ye ek 'bot' hai, user account nahi
 client.start(bot_token=my_bot_token)
+print("Bot is running and listening for fresh deals...")
 client.run_until_disconnected()
