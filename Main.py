@@ -1,17 +1,13 @@
 import os
 import threading
 import re
-import urllib.request
-import urllib.parse
-import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 
 # ==========================================
-# 🚀 CO-FOUNDER CONFIGURATION (API KEYS)
+# 🚀 CONFIGURATION
 # ==========================================
-CUELINKS_API_KEY = "F3x7T2PXVTKHcTj22CRcqhNqR15cfb8sB9nVuwJRPuM"
 YOUR_AMAZON_TAG = "dealofcheapes-21"
 
 # ==========================================
@@ -37,58 +33,44 @@ api_id = int(os.environ.get("API_ID"))
 api_hash = os.environ.get("API_HASH")
 session_string = os.environ.get("SESSION_STRING")
 target_channel = os.environ.get("TARGET_CHANNEL", "@dealofcheapest")
-source_channels = ['deals', 'lootdealsapp']
+
+# Naya channel 'amazinglootsdealsoffers' add kar diya hai
+source_channels = ['deals', 'lootdealsapp', 'amazinglootsdealsoffers']
 
 client = TelegramClient(StringSession(session_string), api_id, api_hash)
-
-# Cuelinks API Function
-def get_cuelinks_affiliate_url(original_url):
-    try:
-        api_endpoint = "https://api.cuelinks.com/v3/links/generate"
-        headers = {
-            "Authorization": f"Bearer {CUELINKS_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        data = json.dumps({"url": original_url}).encode("utf-8")
-        
-        req = urllib.request.Request(api_endpoint, data=data, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=5) as response:
-            res_data = json.loads(response.read().decode())
-            # Cuelinks API return karega naya link, nahi to purana hi de dega
-            return res_data.get("url", original_url) 
-    except Exception as e:
-        print(f"Cuelinks Warning: {e}")
-        return original_url # Failsafe: Error aane par original link bhej do
 
 @client.on(events.NewMessage(chats=source_channels))
 async def handler(event):
     try:
         text = event.text or ""
+        text_lower = text.lower()
         
-        # 1. Amazon Tag Magic 🪄
+        # 1. Amazon Filter: Sirf Amazon deals ko aage badhne dega
+        if "amazon" not in text_lower and "amzn" not in text_lower:
+            return
+
+        # 2. Amazon Tag Magic 🪄
+        # Purane tag ko aapke tag me badal dega
         text = re.sub(r'tag=[a-zA-Z0-9_-]+', f'tag={YOUR_AMAZON_TAG}', text)
         
-        # 2. Cuelinks API Magic (Flipkart/Myntra/Shopsy ke liye) 🪄
-        # Message mein se saare links dhundo
+        # Agar kisi link me tag nahi hai, to add kar dega
         urls = re.findall(r'(https?://[^\s]+)', text)
         for url in urls:
-            # Agar Amazon nahi hai, toh Cuelinks ko bhej do
-            if "amazon" not in url.lower() and "amzn" not in url.lower():
-                affiliated_url = get_cuelinks_affiliate_url(url)
-                if affiliated_url != url:
-                    text = text.replace(url, affiliated_url)
-        
+            if "amazon.in" in url.lower() and "tag=" not in url.lower():
+                separator = "&" if "?" in url else "?"
+                new_url = f"{url}{separator}tag={YOUR_AMAZON_TAG}"
+                text = text.replace(url, new_url)
+
         # 3. Post to Channel 🚀
         if event.media:
             await client.send_file(target_channel, event.media, caption=text)
         else:
             await client.send_message(target_channel, text)
             
-        print("Deal successfully posted with Affiliate Links!")
+        print("Amazon Deal successfully posted with your Tag!")
     except Exception as e:
         print(f"Error in processing deal: {e}")
 
-print("Bot started on Cloud with Cuelinks V3 API...")
+print("Bot started... Listening ONLY for Amazon Loots!")
 client.start()
 client.run_until_disconnected()
-
