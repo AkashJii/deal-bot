@@ -43,9 +43,9 @@ threading.Thread(target=run_server, daemon=True).start()
 # ==========================================
 # 🤖 TELEGRAM BOT LOGIC
 # ==========================================
-api_id = int(os.environ.get("27889998"))
-api_hash = os.environ.get("f4e43245742ae23336ed35374be88bc8")
-session_string = os.environ.get("1BVtsOK4BuzrvAJXzHb1dLRn8NDwesjMifZLUk6m5NcqjyNcW1_2SG1sIZyHW72teBMntd6S7-t-_IqCkCJTpoUJ0uWK1L8gQO2DYZa2LDT-ohSzO3xTxWAO3CFFz0LhCRPyRqHiVmE-YrilGwql3ObYQHJacO8O9LO5yfi_8CHuX-qEB5H89szA8xJOdInK9m5FHrqWOYeHlc6Jnp6JmqzKEUIbPr2m4BBSuuGX8uB66ft24ypTYpTy7T4qrQJBFNEH0ffbvvgd_MCYkn1ILBIBS8lC3iCPHdS7Yg2hiAOCNpsD-nA0d4rHC2aEckV6rE-nByzFeHkPkUAfHL4FwrravbnSEkxo=")
+api_id = int(os.environ.get("API_ID"))
+api_hash = os.environ.get("API_HASH")
+session_string = os.environ.get("SESSION_STRING")
 target_channel = os.environ.get("TARGET_CHANNEL", "@dealofcheapest")
 
 source_channels = ['deals', 'lootdealsapp', 'amazinglootsdealsoffers']
