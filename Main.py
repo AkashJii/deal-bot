@@ -70,15 +70,26 @@ def get_cuelinks_affiliate_url(original_url):
 async def handler(event):
     text = event.text or ""
     
-    # URL nikalne aur Cuelinks se convert karne ka logic
+    # URL nikalne ka logic
     urls = re.findall(r'(https?://[^\s]+)', text)
     if not urls:
         return
         
     new_text = text
     for url in urls:
-        affiliate_url = get_cuelinks_affiliate_url(url)
-        new_text = new_text.replace(url, affiliate_url)
+        final_url = url
+        # Agar Amazon ka link hai, toh manually tag replace karo
+        if "amazon.in" in url or "amazon.com" in url:
+            if "tag=" in final_url:
+                final_url = re.sub(r'tag=[a-zA-Z0-9_-]+', f'tag={YOUR_AMAZON_TAG}', final_url)
+            else:
+                separator = "&" if "?" in final_url else "?"
+                final_url = f"{final_url}{separator}tag={YOUR_AMAZON_TAG}"
+        else:
+            # Baaki links ke liye Cuelinks API use karo
+            final_url = get_cuelinks_affiliate_url(url)
+            
+        new_text = new_text.replace(url, final_url)
         
     # Nayi deal aapke channel par bhejna
     try:
