@@ -48,7 +48,7 @@ api_hash = os.environ.get("API_HASH")
 session_string = os.environ.get("SESSION_STRING")
 target_channel = os.environ.get("TARGET_CHANNEL", "@dealofcheapest")
 
-source_channels = ['deals', 'lootdealsapp', 'amazinglootsdealsoffers']
+source_channels = ['Deal_Deal_Loot_Deal_Loot', 'lootdealsapp', 'amazinglootsdealsoffers']
 client = TelegramClient(StringSession(session_string), api_id, api_hash)
 
 def get_cuelinks_affiliate_url(original_url):
