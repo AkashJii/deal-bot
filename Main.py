@@ -8,13 +8,13 @@ from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 
 # ==========================================
-# 🚀 CONFIGURATION (API KEYS & TAGS)
+# CONFIGURATION (API KEYS & TAGS)
 # ==========================================
-CUELINKS_API_KEY = "F3x7T2PXVTKHcTj22CRcqhNqR15cfb8sB9nVuwJRPuM"
+CUELINKS_API_KEY = "F3x7T2PVXTHKCTJ22CRcqhNqR15cfb8sB9nVwWU="
 YOUR_AMAZON_TAG = "dealofcheapes-21"
 
 # ==========================================
-# 🟢 UPTIMEROBOT 24/7 SERVER LOGIC
+# UPTIMEROBOT 24/7 SERVER LOGIC
 # ==========================================
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -22,12 +22,12 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/html')
         self.end_headers()
         self.wfile.write(b"Bot is ALIVE!")
-        
+
     def do_HEAD(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        
+
     def log_message(self, format, *args):
         pass
 
@@ -41,7 +41,7 @@ def run_server():
 threading.Thread(target=run_server, daemon=True).start()
 
 # ==========================================
-# 🤖 TELEGRAM BOT LOGIC
+# TELEGRAM BOT LOGIC
 # ==========================================
 api_id = int(os.environ.get("API_ID"))
 api_hash = os.environ.get("API_HASH")
@@ -59,47 +59,36 @@ def get_cuelinks_affiliate_url(original_url):
             "Content-Type": "application/json"
         }
         data = json.dumps({"url": original_url}).encode("utf-8")
-        
         req = urllib.request.Request(api_endpoint, data=data, headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=5) as response:
             res_data = json.loads(response.read().decode())
-            return res_data.get("url", original_url) 
+            return res_data.get("url", original_url)
     except Exception as e:
         return original_url
 
 @client.on(events.NewMessage(chats=source_channels))
 async def handler(event):
-    try:
-        text = event.text or ""
+    text = event.text or ""
+    
+    # URL nikalne aur Cuelinks se convert karne ka logic
+    urls = re.findall(r'(https?://[^\s]+)', text)
+    if not urls:
+        return
         
-        # 1. URL Conversion (Agar message mein link hai toh convert karega)
-        urls = re.findall(r'(https?://[^\s]+)', text)
-        for url in urls:
-            if "amazon" in url.lower() or "amzn" in url.lower():
-                # Amazon Tag Update
-                clean_url = re.sub(r'([?&])tag=[a-zA-Z0-9_-]+', r'', url)
-                separator = "&" if "?" in clean_url else "?"
-                new_url = f"{clean_url}{separator}tag={YOUR_AMAZON_TAG}"
-                text = text.replace(url, new_url)
-            else:
-                # Meesho, Flipkart, Myntra -> Cuelinks Conversion
-                base_url = url.split('&affid=')[0].split('?affid=')[0]
-                affiliated_url = get_cuelinks_affiliate_url(base_url)
-                if affiliated_url != url:
-                    text = text.replace(url, affiliated_url)
-
-        # 2. Deal of Cheapest me forward karna (Bina kisi filter ke)
-        # Agar photo/video hai toh caption ke sath bhejo
+    new_text = text
+    for url in urls:
+        affiliate_url = get_cuelinks_affiliate_url(url)
+        new_text = new_text.replace(url, affiliate_url)
+        
+    # Nayi deal aapke channel par bhejna
+    try:
         if event.media:
-            await client.send_file(target_channel, event.media, caption=text)
-        # Agar sirf text hai toh direct bhejo (khali message ignore karega bas)
-        elif text.strip():
-            await client.send_message(target_channel, text)
-            
-        print("Success: Message Copied & Posted!")
+            await client.send_message(target_channel, new_text, file=event.media)
+        else:
+            await client.send_message(target_channel, new_text)
     except Exception as e:
-        print(f"Error in processing message: {e}")
+        print(f"Message send karne mein error: {e}")
 
-print("Bot started... Copying EVERYTHING from source channels!")
+print("Bot is starting...")
 client.start()
 client.run_until_disconnected()
